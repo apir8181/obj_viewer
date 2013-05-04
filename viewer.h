@@ -59,7 +59,7 @@ class Viewer: public QGLWidget{
 
   void enableTranslate();
   //loop subdivision
-
+  //texture
   void enableTexture();
   void disableTexture();
   bool getTextureEnabled();
@@ -120,8 +120,11 @@ class Viewer: public QGLWidget{
   void initLight();
   //texture
   bool is_texture;
+  GLuint texture_id;
+  QImage* origin_image;
   QImage* texture_image;
-
+  void initTexture();
+  void textureDisplay();
 
   void drawSystemCoordinate();
 };

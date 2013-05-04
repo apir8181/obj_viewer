@@ -180,7 +180,8 @@ Parser::Parser(const char* file_name){
   resizeVector();
 }
 
-void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
+void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
+                      bool show_texture){
   glPushMatrix();
   glScalef(vertice_scale_x,vertice_scale_y,vertice_scale_z);
   glTranslatef(vertice_transform_x,vertice_transform_y,
@@ -193,6 +194,7 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
     if (t == DRAW_POLY){
       glDisable(GL_LIGHTING);
       glDisable(GL_LIGHT0);
+      glDisable(GL_TEXTURE_2D);
       glColor3f(0.0,0.0,0.0);
       glBegin(GL_LINE_LOOP);
     
@@ -203,15 +205,20 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
         glVertex4f(vertice4f[0],vertice4f[1],
                    vertice4f[2],vertice4f[3]);
       }
+
       glEnd();      
       glEnable(GL_LIGHTING);
       glEnable(GL_LIGHT0);
+      glEnable(GL_TEXTURE_2D);
     }
 
     if (t == DRAW_POINT || t == DRAW_LINE || is_light == false){
       glColor3f(0.0,0.0,0.0);
       glDisable(GL_LIGHTING);
       glDisable(GL_LIGHT0);
+    }
+    if (show_texture == false){
+      glDisable(GL_TEXTURE_2D);
     }
 
     if (t == DRAW_POINT) glBegin(GL_POINTS);
@@ -230,9 +237,12 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
       if (is_light && count < face->normals_index.size()){
         float* normal3f = object.normals3f[face->normals_index[count] 
                                         - 1];
-
-
         glNormal3f(normal3f[0],normal3f[1],normal3f[2]);
+      }
+      if (show_texture && count < face->text_coords_index.size()){
+        //only support 2d texture now
+        float* tex_coords3f = object.text_coords3f[face->text_coords_index[count] - 1];
+        glTexCoord2f(tex_coords3f[0],tex_coords3f[1]);
       }
       count ++;
       //set vertices
@@ -242,6 +252,7 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
     }
     glEnd();
      
+    glDisable(GL_TEXTURE_2D);
 
     //show normal vector
     if (show_normals){
@@ -272,8 +283,6 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
   glPopMatrix();
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-
-  //remian to set texture vectors
 }
 
 

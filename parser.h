@@ -33,7 +33,8 @@ class Parser{
   //the file has correct obj file format
   Parser(const char* file_name);
   ~Parser();
-  void drawInGL(DRAW_TYPE t,bool is_light,bool show_normals);
+  void drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
+                bool show_texture);
   void printInfo();
   bool getSuccess();
  private:

@@ -16,6 +16,7 @@
 #include <QVBoxLayout>
 #include <QFont>
 #include <QCheckBox>
+#include <QSize>
 
 MainWindow::MainWindow(QWidget *parent):QMainWindow(parent){
   mdi_area = new QMdiArea();
@@ -741,7 +742,10 @@ void MainWindow::createTextureWidget(){
   texture_layout->addWidget(texture_select_label);
   
   texture_select_button = new QPushButton();
+  texture_select_button->setFixedSize(QSize(50,50));
   texture_layout->addWidget(texture_select_button);
+  connect(texture_select_button,SIGNAL(clicked()),
+          this,SLOT(textureSelectAction()));
 
   QWidget *texture_widget = new QWidget();
   texture_widget->setLayout(texture_layout);
@@ -749,12 +753,10 @@ void MainWindow::createTextureWidget(){
 }
 
 void MainWindow::enableTextureWidget(){
-  texture_checkbox->setEnabled(true);
   texture_select_button->setEnabled(true);
 }
 
 void MainWindow::disableTextureWidget(){
-  texture_checkbox->setEnabled(false);
   texture_select_button->setEnabled(false);
 }
 

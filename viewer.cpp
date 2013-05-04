@@ -54,6 +54,9 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   material_emission[0]=material_emission[1]=material_emission[2]=0.0;
   material_emission[3]=1.0;
   material_shininess = 100.0;
+  //texture
+  is_texture = true;
+  origin_image = texture_image = NULL;
 }
 
 Viewer::~Viewer(){
@@ -65,9 +68,8 @@ Viewer::~Viewer(){
 void Viewer::initializeGL(){
   glClearColor(0.4,0.4,0.4,1.0);
   glShadeModel(GL_SMOOTH);
-  if (is_light){
-    initLight();
-  }
+  if (is_light) initLight();
+  initTexture();
   glEnable(GL_DEPTH_TEST);
 }
 
@@ -93,7 +95,8 @@ void Viewer::paintGL(){
     rotate();
     drawSystemCoordinate();
     scale();
-    parser->drawInGL(draw_type,is_light,show_normals);
+    if (is_texture) textureDisplay();
+    parser->drawInGL(draw_type,is_light,show_normals,is_texture);
     glLightfv(GL_LIGHT0,GL_POSITION,light_position);
   }
 }
@@ -292,6 +295,21 @@ void Viewer::initLight(){
   glEnable(GL_NORMALIZE);
 }
 
+void Viewer::initTexture(){
+  glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+  glGenTextures(1,&texture_id);
+  glBindTexture(GL_TEXTURE_2D,texture_id);
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_NEAREST);  
+}
+
+void Viewer::textureDisplay(){
+  glBindTexture(GL_TEXTURE_2D,texture_id);
+  glTexEnvf(GL_TEXTURE_ENV,GL_TEXTURE_ENV_MODE,GL_MODULATE);
+}
+
 void Viewer::setShowNormals(bool t){
   show_normals = t;
   updateGL();
@@ -458,12 +476,24 @@ void Viewer::disableTexture(){
 }
 
 void Viewer::setTextureImage(QImage *image){
+  if (image == NULL) return;
   if (texture_image != NULL && texture_image != image)
     delete texture_image;
-  texture_image = image;
+  if (origin_image != NULL && origin_image != image)
+    delete origin_image;
+  
+  origin_image = image;
+  texture_image = new QImage(convertToGLFormat(*image));
+  glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA,texture_image->width(),
+               texture_image->height(),0,GL_RGBA,
+               GL_UNSIGNED_BYTE,texture_image->bits());
   updateGL();
 }
 
 QImage* Viewer::getTextureImage(){
-  return texture_image;
+  return origin_image;
+}
+
+bool Viewer::getTextureEnabled(){
+  return is_texture;
 }
