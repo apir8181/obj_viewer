@@ -224,6 +224,18 @@ void MainWindow::updateActions(){
     else texture_checkbox->setChecked(Qt::Unchecked);
     if (now->getTextureEnabled()) enableTextureWidget();
     else disableTextureWidget();
+
+    QPixmap pix;
+    if (now->getTextureImage() && pix.convertFromImage(*(now->getTextureImage()))){
+      QIcon icon(pix);
+      texture_select_button->setIconSize(QSize(texture_select_button->width(),texture_select_button->height()));
+      texture_select_button->setIcon(icon);
+    }
+    else{
+      QIcon icon;
+      texture_select_button->setIcon(icon);
+    }
+
     //update light
     if (now->getShowNormals())
       show_normals_box->setCheckState(Qt::Checked);
@@ -279,7 +291,8 @@ void MainWindow::open(){
     else texture_checkbox->setChecked(Qt::Unchecked);
     if (viewer->getTextureEnabled()) enableTextureWidget();
     else disableTextureWidget();
-
+    texture_select_button->setIcon(QIcon());
+    
     QMdiSubWindow *sub_window = mdi_area->addSubWindow(viewer);
     window_menu->addAction(viewer->windowMenuAction());
     window_action_group->addAction(viewer->windowMenuAction());
@@ -474,6 +487,13 @@ void MainWindow::textureSelectAction(){
   QImage* image = new QImage(file_name);
   if (!image && image->isNull()) return;
   v->setTextureImage(image);
+
+  QPixmap pix;
+  if (pix.convertFromImage(*image)){
+    QIcon icon(pix);
+    texture_select_button->setIconSize(QSize(texture_select_button->width(),texture_select_button->height()));
+    texture_select_button->setIcon(icon);
+  }
 }
 
 Viewer* MainWindow::activeViewer(){
@@ -742,7 +762,7 @@ void MainWindow::createTextureWidget(){
   texture_layout->addWidget(texture_select_label);
   
   texture_select_button = new QPushButton();
-  texture_select_button->setFixedSize(QSize(50,50));
+  texture_select_button->setMinimumHeight(100);
   texture_layout->addWidget(texture_select_button);
   connect(texture_select_button,SIGNAL(clicked()),
           this,SLOT(textureSelectAction()));
