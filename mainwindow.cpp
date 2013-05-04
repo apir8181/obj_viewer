@@ -46,6 +46,8 @@ MainWindow::~MainWindow(){
   delete polygon_pix;
   delete scale_pix;
   delete light_pix;
+  delete material_pix;
+  delete texture_pix;
 }
 
 void MainWindow::createMenuBar(){
@@ -92,10 +94,20 @@ void MainWindow::createToolBar(){
 }
 
 void MainWindow::createLeftToolBar(){
-  left_toolbar = new QToolBar(this);
-  addToolBar(Qt::LeftToolBarArea,left_toolbar);
+  
+  QToolBar* temp_toolbar = new QToolBar(this);
+  addToolBar(Qt::LeftToolBarArea,temp_toolbar);
+  QScrollArea* scroll_area = new QScrollArea(this);
+  temp_toolbar->addWidget(scroll_area);
+  scroll_area->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+  QWidget* temp_widget = new QWidget(this);
+  left_toolbar = new QVBoxLayout();
   createScaleWidget();
   createLightWidget();
+  createMaterialWidget();
+  createTextureWidget();
+  temp_widget->setLayout(left_toolbar);
+  scroll_area->setWidget(temp_widget);
 }
 
 void MainWindow::createResources(){
@@ -112,6 +124,8 @@ void MainWindow::createResources(){
   polygon_pix = new QPixmap("images/polygon.png");
   scale_pix = new QPixmap("images/scale.png");
   light_pix = new QPixmap("images/light.png");
+  material_pix = new QPixmap("images/material.png");
+  texture_pix = new QPixmap("images/texture.png");
 }
 
 void MainWindow::createActions(){
@@ -191,14 +205,36 @@ void MainWindow::updateActions(){
     light_pos_spinbox_x->setValue(now->getLightPositionX());
     light_pos_spinbox_y->setValue(now->getLightPositionY());
     light_pos_spinbox_z->setValue(now->getLightPositionZ());
-
+    //update light color
+    buttonSetColor(light_ambient_button,now->getLightAmbient());
+    buttonSetColor(light_diffuse_button,now->getLightDiffuse());
+    buttonSetColor(light_specular_button,now->getLightSpecular());
+    //update material
+    buttonSetColor(material_ambient_button,now->getMaterialAmbient());
+    buttonSetColor(material_diffuse_button,now->getMaterialDiffuse());
+    buttonSetColor(material_specular_button,
+                   now->getMaterialSpecular());
+    buttonSetColor(material_emission_button,
+                   now->getMaterialEmission());
+    material_shininess_spinbox->setValue(now->getMaterialShininess());
+    //texture
+    if (now->getTextureEnabled())
+      texture_checkbox->setChecked(Qt::Checked);
+    else texture_checkbox->setChecked(Qt::Unchecked);
+    if (now->getTextureEnabled()) enableTextureWidget();
+    else disableTextureWidget();
     //update light
     if (now->getShowNormals())
       show_normals_box->setCheckState(Qt::Checked);
     else show_normals_box->setCheckState(Qt::Unchecked);
-    if (now->getShowLight())
+    if (now->getShowLight()){
       show_light_box->setCheckState(Qt::Checked);
-    else show_light_box->setCheckState(Qt::Unchecked);
+      enableLightWidget();
+    }
+    else{
+      show_light_box->setCheckState(Qt::Unchecked);
+      disableLightWidget();
+    }
   }
 }
 
@@ -220,6 +256,28 @@ void MainWindow::open(){
     light_pos_spinbox_x->setValue(viewer->getLightPositionX());
     light_pos_spinbox_y->setValue(viewer->getLightPositionY());
     light_pos_spinbox_z->setValue(viewer->getLightPositionZ());
+    //set default light color
+    buttonSetColor(light_ambient_button,viewer->getLightAmbient());
+    buttonSetColor(light_diffuse_button,viewer->getLightDiffuse());
+    buttonSetColor(light_specular_button,viewer->getLightSpecular());
+    //set default material color
+    buttonSetColor(material_ambient_button,
+                   viewer->getMaterialAmbient());
+    buttonSetColor(material_diffuse_button,
+                   viewer->getMaterialDiffuse());
+    buttonSetColor(material_specular_button,
+                   viewer->getMaterialSpecular());
+    buttonSetColor(material_emission_button,
+                   viewer->getMaterialEmission());
+    material_shininess_spinbox->setValue(viewer->getMaterialShininess());
+    if (viewer->getShowLight()) enableLightWidget();
+    else disableLightWidget();
+    //texture
+    if (viewer->getTextureEnabled())
+      texture_checkbox->setChecked(Qt::Checked);
+    else texture_checkbox->setChecked(Qt::Unchecked);
+    if (viewer->getTextureEnabled()) enableTextureWidget();
+    else disableTextureWidget();
 
     QMdiSubWindow *sub_window = mdi_area->addSubWindow(viewer);
     window_menu->addAction(viewer->windowMenuAction());
@@ -279,13 +337,115 @@ void MainWindow::lightPosZAction(double num){
   if (v) v->setLightPositionZ(num);
 }
 
+void MainWindow::lightAmbientAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getLightAmbient(),this);
+  if (color.isValid()){
+    buttonSetColor(light_ambient_button,color);
+    v->setLightAmbient(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::lightDiffuseAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getLightDiffuse(),this);
+  if (color.isValid()){
+    buttonSetColor(light_diffuse_button,color);
+    v->setLightDiffuse(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::lightSpecularAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getLightSpecular(),this);
+  if (color.isValid()){
+    buttonSetColor(light_specular_button,color);
+    v->setLightSpecular(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::materialAmbientAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getMaterialAmbient(),this);
+  if (color.isValid()){
+    buttonSetColor(material_ambient_button,color);
+    v->setMaterialAmbient(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::materialDiffuseAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getMaterialDiffuse(),this);
+  if (color.isValid()){
+    buttonSetColor(material_diffuse_button,color);
+    v->setMaterialDiffuse(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::materialSpecularAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getMaterialSpecular(),this);
+  if (color.isValid()){
+    buttonSetColor(material_specular_button,color);
+    v->setMaterialSpecular(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::materialEmissionAction(){
+  Viewer* v = activeViewer();
+  if (!v) return;
+
+  QColor color = QColorDialog::getColor(v->getMaterialEmission(),this);
+  if (color.isValid()){
+    buttonSetColor(material_emission_button,color);
+    v->setMaterialEmission(color.red(),color.green(),color.blue());
+  }
+}
+
+void MainWindow::materialShininessAction(double num){
+  Viewer* v = activeViewer();
+  if (v){
+    v->setMaterialShininess(num);
+  }
+}
+
 void MainWindow::showLight(int state){
   Viewer* v = activeViewer();
   if (v){
     if (state == Qt::Checked){
       v->enableLight();
+      enableLightWidget();
     }
-    else v->disableLight();
+    else{
+      v->disableLight();
+      disableLightWidget();
+    }
+  }
+}
+
+void MainWindow::textureShowAction(int state){
+  Viewer* v = activeViewer();
+  if (v){
+    if (state == Qt::Checked){
+      v->enableTexture();
+      enableTextureWidget();
+    }
+    else{
+      v->disableTexture();
+      disableTextureWidget();
+    }
   }
 }
 
@@ -304,6 +464,16 @@ void MainWindow::polygonAction(){
   if (v) v->enablePoly();
 }
 
+
+void MainWindow::textureSelectAction(){
+  Viewer *v = activeViewer();
+  if (!v) return;
+  QString file_name = QFileDialog::getOpenFileName(this,"Open",".");
+  if (file_name.isEmpty()) return;
+  QImage* image = new QImage(file_name);
+  if (!image && image->isNull()) return;
+  v->setTextureImage(image);
+}
 
 Viewer* MainWindow::activeViewer(){
   QMdiSubWindow *sub_window = mdi_area->activeSubWindow();
@@ -363,9 +533,9 @@ void MainWindow::createScaleWidget(){
 }
 
 void MainWindow::createLightWidget(){
-  QVBoxLayout *light_layout = new QVBoxLayout(this);
+  QVBoxLayout *light_layout = new QVBoxLayout();
   //light icon
-  QHBoxLayout *light_top = new QHBoxLayout(this);
+  QHBoxLayout *light_top = new QHBoxLayout();
   QLabel *light_label = new QLabel(QString("Light:"),this);
   QLabel *light_icon = new QLabel(this);
   light_icon->setPixmap(light_pix->scaled(25,25));
@@ -385,9 +555,9 @@ void MainWindow::createLightWidget(){
           this,SLOT(showLight(int)));
   light_layout->addWidget(show_light_box);
   //light position
-  QLable *light_pos_label = new QLabel(QString("Light pos:"),this);
+  QLabel *light_pos_label = new QLabel(QString("Light pos:"),this);
   light_layout->addWidget(light_pos_label);
-  QHBoxLayout *light_pos_box_x = new QHBoxLayout(this);
+  QHBoxLayout *light_pos_box_x = new QHBoxLayout();
   QLabel *light_pos_label_x = new QLabel(QString("x:"),this);
   light_pos_spinbox_x = new QDoubleSpinBox(this);
   light_pos_spinbox_x->setRange(-1000.0,1000.0);
@@ -397,7 +567,7 @@ void MainWindow::createLightWidget(){
   connect(light_pos_spinbox_x,SIGNAL(valueChanged(double)),
           this,SLOT(lightPosXAction(double)));
   light_layout->addLayout(light_pos_box_x);
-  QHBoxLayout *light_pos_box_y = new QHBoxLayout(this);
+  QHBoxLayout *light_pos_box_y = new QHBoxLayout();
   QLabel *light_pos_label_y = new QLabel(QString("y:"),this);
   light_pos_spinbox_y = new QDoubleSpinBox(this);
   light_pos_spinbox_y->setRange(-1000.0,1000.0);
@@ -407,7 +577,7 @@ void MainWindow::createLightWidget(){
   connect(light_pos_spinbox_y,SIGNAL(valueChanged(double)),
           this,SLOT(lightPosYAction(double)));
   light_layout->addLayout(light_pos_box_y);
-  QHBoxLayout *light_pos_box_z = new QHBoxLayout(this);
+  QHBoxLayout *light_pos_box_z = new QHBoxLayout();
   QLabel *light_pos_label_z = new QLabel(QString("z:"),this);
   light_pos_spinbox_z = new QDoubleSpinBox(this);
   light_pos_spinbox_z->setRange(-1000.0,1000.0);
@@ -418,8 +588,177 @@ void MainWindow::createLightWidget(){
           this,SLOT(lightPosZAction(double)));
   light_layout->addLayout(light_pos_box_z);
   //light pos end
-
+  //light pro start
+  QHBoxLayout *light_ambient_box = new QHBoxLayout();
+  QLabel *light_ambient_label = new QLabel(QString("ambient:"),this);
+  light_ambient_button = new QPushButton(this);
+  light_ambient_button->setFixedSize(35,25);
+  connect(light_ambient_button,SIGNAL(clicked()),
+          this,SLOT(lightAmbientAction()));
+  light_ambient_box->addWidget(light_ambient_label);
+  light_ambient_box->addWidget(light_ambient_button);
+  light_layout->addLayout(light_ambient_box);
+  QHBoxLayout *light_diffuse_box = new QHBoxLayout();
+  QLabel *light_diffuse_label = new QLabel(QString("diffuse:"),this);
+  light_diffuse_button = new QPushButton(this);
+  light_diffuse_button->setFixedSize(35,25);
+  connect(light_diffuse_button,SIGNAL(clicked()),
+          this,SLOT(lightDiffuseAction()));
+  light_diffuse_box->addWidget(light_diffuse_label);
+  light_diffuse_box->addWidget(light_diffuse_button);
+  light_layout->addLayout(light_diffuse_box);  
+  QHBoxLayout *light_specular_box = new QHBoxLayout();
+  QLabel *light_specular_label = new QLabel(QString("specular:"),this);
+  light_specular_button = new QPushButton(this);
+  light_specular_button->setFixedSize(35,25);
+  connect(light_specular_button,SIGNAL(clicked()),
+          this,SLOT(lightSpecularAction()));
+  light_specular_box->addWidget(light_specular_label);
+  light_specular_box->addWidget(light_specular_button);
+  light_layout->addLayout(light_specular_box);
+  //light pro end
   QWidget *light_box_widget = new QWidget(this);
   light_box_widget->setLayout(light_layout);
   left_toolbar->addWidget(light_box_widget);
+}
+
+void MainWindow::createMaterialWidget(){
+  QVBoxLayout *material_layout = new QVBoxLayout();
+  //light icon
+  QHBoxLayout *material_top = new QHBoxLayout();
+  QLabel *material_label = new QLabel(QString("Material:"),this);
+  QLabel *material_icon = new QLabel(this);
+  material_icon->setPixmap(material_pix->scaled(25,25));
+  material_top->addWidget(material_icon);
+  material_top->addWidget(material_label);
+  material_layout->addLayout(material_top);
+  //ambient box
+  QHBoxLayout *material_ambient_box = new QHBoxLayout();
+  QLabel *material_ambient_label=new QLabel(QString("ambient:"),this);
+  material_ambient_button = new QPushButton(this);
+  material_ambient_button->setFixedSize(35,25);
+  connect(material_ambient_button,SIGNAL(clicked()),
+          this,SLOT(materialAmbientAction()));
+  material_ambient_box->addWidget(material_ambient_label);
+  material_ambient_box->addWidget(material_ambient_button);
+  material_layout->addLayout(material_ambient_box);
+  //diffuse box
+  QHBoxLayout *material_diffuse_box = new QHBoxLayout();
+  QLabel *material_diffuse_label=new QLabel(QString("diffuse:"),this);
+  material_diffuse_button = new QPushButton(this);
+  material_diffuse_button->setFixedSize(35,25);
+  connect(material_diffuse_button,SIGNAL(clicked()),
+          this,SLOT(materialDiffuseAction()));
+  material_diffuse_box->addWidget(material_diffuse_label);
+  material_diffuse_box->addWidget(material_diffuse_button);
+  material_layout->addLayout(material_diffuse_box);
+  //specular box
+  QHBoxLayout *material_specular_box = new QHBoxLayout();
+  QLabel *material_specular_label = 
+    new QLabel(QString("specular:"),this);
+  material_specular_button = new QPushButton(this);
+  material_specular_button->setFixedSize(35,25);
+  connect(material_specular_button,SIGNAL(clicked()),
+          this,SLOT(materialSpecularAction()));
+  material_specular_box->addWidget(material_specular_label);
+  material_specular_box->addWidget(material_specular_button);
+  material_layout->addLayout(material_specular_box);
+  //emission box
+  QHBoxLayout *material_emission_box = new QHBoxLayout();
+  QLabel *material_emission_label = 
+    new QLabel(QString("emission:"),this);
+  material_emission_button = new QPushButton(this);
+  material_emission_button->setFixedSize(35,25);
+  connect(material_emission_button,SIGNAL(clicked()),
+          this,SLOT(materialEmissionAction()));
+  material_emission_box->addWidget(material_emission_label);
+  material_emission_box->addWidget(material_emission_button);
+  material_layout->addLayout(material_emission_box);
+  
+  QHBoxLayout *material_shininess_box = new QHBoxLayout();
+  QLabel *material_shininess_label = 
+    new QLabel(QString("shininess:"),this);
+  material_shininess_spinbox = new QDoubleSpinBox(this);
+  material_shininess_spinbox->setRange(0,100.0);
+  material_shininess_spinbox->setSingleStep(1);
+  material_shininess_box->addWidget(material_shininess_label);
+  material_shininess_box->addWidget(material_shininess_spinbox);
+  connect(material_shininess_spinbox,SIGNAL(valueChanged(double)),
+          this,SLOT(materialShininessAction(double)));
+  material_layout->addLayout(material_shininess_box);
+
+  QWidget *material_box_widget = new QWidget(this);
+  material_box_widget->setLayout(material_layout);
+  left_toolbar->addWidget(material_box_widget);  
+}
+
+void MainWindow::enableLightWidget(){
+  light_pos_spinbox_x->setEnabled(true);
+  light_pos_spinbox_y->setEnabled(true);
+  light_pos_spinbox_z->setEnabled(true);
+  light_ambient_button->setEnabled(true);
+  light_diffuse_button->setEnabled(true);
+  light_specular_button->setEnabled(true);
+  material_ambient_button->setEnabled(true);
+  material_diffuse_button->setEnabled(true);
+  material_specular_button->setEnabled(true);
+  material_emission_button->setEnabled(true);
+  material_shininess_spinbox->setEnabled(true);
+}
+
+void MainWindow::disableLightWidget(){
+  light_pos_spinbox_x->setEnabled(false);
+  light_pos_spinbox_y->setEnabled(false);
+  light_pos_spinbox_z->setEnabled(false);
+  light_ambient_button->setEnabled(false);
+  light_diffuse_button->setEnabled(false);
+  light_specular_button->setEnabled(false);
+  material_ambient_button->setEnabled(false);
+  material_diffuse_button->setEnabled(false);
+  material_specular_button->setEnabled(false);
+  material_emission_button->setEnabled(false);
+  material_shininess_spinbox->setEnabled(false);
+}
+
+void MainWindow::createTextureWidget(){
+  QVBoxLayout *texture_layout = new QVBoxLayout();
+
+  QHBoxLayout *texture_top = new QHBoxLayout();
+  QLabel *texture_icon = new QLabel(this);
+  QLabel *texture_label = new QLabel(QString("Texture:"),this);
+  texture_icon->setPixmap(texture_pix->scaled(25,25));
+  texture_top->addWidget(texture_icon);
+  texture_top->addWidget(texture_label);
+  texture_layout->addLayout(texture_top);
+
+  texture_checkbox = new QCheckBox(QString("enable"),this);
+  texture_checkbox->setChecked(true);
+  texture_layout->addWidget(texture_checkbox);
+  connect(texture_checkbox,SIGNAL(stateChanged(int)),
+          this,SLOT(textureShowAction(int)));
+
+  QLabel *texture_select_label = new QLabel(QString("select"),this);
+  texture_layout->addWidget(texture_select_label);
+  
+  texture_select_button = new QPushButton();
+  texture_layout->addWidget(texture_select_button);
+
+  QWidget *texture_widget = new QWidget();
+  texture_widget->setLayout(texture_layout);
+  left_toolbar->addWidget(texture_widget);
+}
+
+void MainWindow::enableTextureWidget(){
+  texture_checkbox->setEnabled(true);
+  texture_select_button->setEnabled(true);
+}
+
+void MainWindow::disableTextureWidget(){
+  texture_checkbox->setEnabled(false);
+  texture_select_button->setEnabled(false);
+}
+
+void MainWindow::buttonSetColor(QPushButton *button,QColor color){
+    const QString COLOR_STYLE("QPushButton {background-color: %1;}");
+    button->setStyleSheet(COLOR_STYLE.arg(color.name()));
 }

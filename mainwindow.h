@@ -7,6 +7,10 @@
 #include <QActionGroup>
 #include <QDoubleSpinBox>
 #include <QCheckBox>
+#include <QPushButton>
+#include <QColor>
+#include <QDockWidget>
+#include <QVBoxLayout>
 #include "viewer.h"
 
 class MainWindow:public QMainWindow{
@@ -34,6 +38,19 @@ private slots:
   void lightPosYAction(double num);
   void lightPosZAction(double num);
 
+  void lightAmbientAction();
+  void lightDiffuseAction();
+  void lightSpecularAction();
+
+  void materialAmbientAction();
+  void materialDiffuseAction();
+  void materialSpecularAction();
+  void materialEmissionAction();
+  void materialShininessAction(double num);
+
+  void textureShowAction(int state);
+  void textureSelectAction();
+
   void pointAction();
   void lineAction();
   void polygonAction();
@@ -53,6 +70,8 @@ private:
   QPixmap *polygon_pix;
   QPixmap *scale_pix;
   QPixmap *light_pix;
+  QPixmap *material_pix;
+  QPixmap *texture_pix;
 
   QAction *open_action;
   QAction *close_action;
@@ -77,7 +96,7 @@ private:
   QMenu *window_menu;
   QMenu *operation_menu;
   QToolBar *toolbar;
-  QToolBar *left_toolbar;
+  QVBoxLayout *left_toolbar;
   //scale widget
   QDoubleSpinBox *scale_spinbox_x;
   QDoubleSpinBox *scale_spinbox_y;
@@ -89,15 +108,35 @@ private:
   QDoubleSpinBox *light_pos_spinbox_x;
   QDoubleSpinBox *light_pos_spinbox_y;
   QDoubleSpinBox *light_pos_spinbox_z;
+  QPushButton *light_ambient_button;
+  QPushButton *light_diffuse_button;
+  QPushButton *light_specular_button;
+  QPushButton *material_ambient_button;
+  QPushButton *material_diffuse_button;
+  QPushButton *material_specular_button;
+  QPushButton *material_emission_button;
+  QDoubleSpinBox *material_shininess_spinbox;
+  void enableLightWidget();
+  void disableLightWidget();
+  //texture
+  QAction *texture_select_action;
+  QCheckBox *texture_checkbox;
+  QPushButton *texture_select_button;
+  void enableTextureWidget();
+  void disableTextureWidget();
 
   void createMenuBar();
   void createToolBar();
   void createLeftToolBar();
   void createScaleWidget();
   void createLightWidget();
+  void createMaterialWidget();
+  void createTextureWidget();
   void createResources();
   void createActions();
   Viewer *activeViewer();
+
+  void buttonSetColor(QPushButton *button,QColor color);
 };
 
 #endif

@@ -63,7 +63,6 @@ Parser::Parser(const char* file_name){
   //remain to do
   while (getline(input,temp_str)){
     strcpy(str,temp_str.c_str());
-    printf("%s\n",str);
 
     int length = strlen(str);
     if (length == 0) {continue;}
@@ -178,11 +177,15 @@ Parser::Parser(const char* file_name){
 
   input.close();
   success = true;
+  resizeVector();
 }
 
 void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
+  glPushMatrix();
+  glScalef(vertice_scale_x,vertice_scale_y,vertice_scale_z);
+  glTranslatef(vertice_transform_x,vertice_transform_y,
+               vertice_transform_z);
 
-      
   for (vector<faceInfo>::iterator face = object.faces.begin();
        face != object.faces.end(); face ++){
 
@@ -266,6 +269,7 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals){
 
   }//end for faces
 
+  glPopMatrix();
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
 
@@ -284,7 +288,7 @@ Parser::~Parser(){
   object.vertices4f.clear();
   object.text_coords3f.clear();
   object.normals3f.clear();
-  
+
 }
 
 void Parser::printInfo(){
@@ -329,4 +333,40 @@ void Parser::printInfo(){
 
 bool Parser::getSuccess(){
   return success;
+}
+
+
+static float max(float a,float b){
+  return a > b ? a : b;
+}
+
+static float min(float a,float b){
+  return a > b ? b : a;
+}
+
+
+void Parser::resizeVector(){
+  vertice_scale_x = vertice_scale_y = vertice_scale_z = 1.0;
+  float x_max = -1e7, y_max = -1e7, z_max = -1e7,
+    x_min = 1e7, y_min = 1e7, z_min = 1e7;
+
+  for (unsigned int i = 0; i < object.vertices4f.size(); i ++){
+    float normal = object.vertices4f[i][3];
+    x_max = max(x_max,object.vertices4f[i][0]) / normal;
+    x_min = min(x_min,object.vertices4f[i][0]) / normal;
+    y_max = max(y_max,object.vertices4f[i][1]) / normal;
+    y_min = min(y_min,object.vertices4f[i][1]) / normal;
+    z_max = max(z_max,object.vertices4f[i][2]) / normal;
+    z_min = min(z_min,object.vertices4f[i][2]) / normal;
+  }
+
+
+  vertice_scale_x /= (x_max - x_min);
+  vertice_scale_y /= (y_max - y_min);
+  vertice_scale_z /= (z_max - z_min);
+  vertice_scale_x = vertice_scale_y = vertice_scale_z = 
+    min(vertice_scale_x,min(vertice_scale_y,vertice_scale_z)) * 3;
+  vertice_transform_x = (x_max + x_min) / 2 * -1;
+  vertice_transform_y = (y_max + y_min) / 2 * -1;
+  vertice_transform_z = (z_max + z_min) / 2 * -1;
 }

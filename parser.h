@@ -37,8 +37,12 @@ class Parser{
   void printInfo();
   bool getSuccess();
  private:
+  void resizeVector();
   bool success;
   objInfo object;
+
+  float vertice_scale_x, vertice_scale_y, vertice_scale_z;
+  float vertice_transform_x, vertice_transform_y, vertice_transform_z;
 };
 
 #endif

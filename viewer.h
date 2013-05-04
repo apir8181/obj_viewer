@@ -31,15 +31,40 @@ class Viewer: public QGLWidget{
   void enableLight();
   void disableLight();
   bool getShowLight();
+  //light position
   void setLightPositionX(double x);
   float getLightPositionX();
   void setLightPositionY(double y);
   float getLightPositionY();
   void setLightPositionZ(double z);
   float getLightPositionZ();
+  //light pro
+  void setLightAmbient(int r,int g,int b);
+  QColor getLightAmbient();
+  void setLightDiffuse(int r,int g,int b);
+  QColor getLightDiffuse();
+  void setLightSpecular(int r,int g,int b);
+  QColor getLightSpecular();
+  //material pro
+  void setMaterialAmbient(int r,int g,int b);
+  QColor getMaterialAmbient();
+  void setMaterialDiffuse(int r,int g,int b);
+  QColor getMaterialDiffuse();
+  void setMaterialSpecular(int r,int g,int b);
+  QColor getMaterialSpecular();
+  void setMaterialEmission(int r,int g,int b);
+  QColor getMaterialEmission();
+  void setMaterialShininess(double s);
+  float getMaterialShininess();
 
   void enableTranslate();
-  //loop subdivision,texture,scale
+  //loop subdivision
+
+  void enableTexture();
+  void disableTexture();
+  bool getTextureEnabled();
+  void setTextureImage(QImage *image);
+  QImage* getTextureImage();
 
   void setDrawType(DRAW_TYPE t);
   void enablePoint();
@@ -93,6 +118,10 @@ class Viewer: public QGLWidget{
   GLfloat material_emission[4];
   GLfloat material_shininess;
   void initLight();
+  //texture
+  bool is_texture;
+  QImage* texture_image;
+
 
   void drawSystemCoordinate();
 };

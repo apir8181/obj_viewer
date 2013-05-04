@@ -5,12 +5,12 @@
 #include <QSize>
 #include <GL/glut.h>
 #include <QString>
+#include <QColor>
 
 Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   :QGLWidget(parent)
 {
   parser = _parser;
-  parser->printInfo();
   file_name = _file_name;
   action = new QAction(this);
   action->setCheckable(true);
@@ -35,7 +35,7 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   //light
   show_normals = true;
   is_light = true;
-  light_ambient[0]=light_ambient[1]=light_ambient[2]=0.0;
+  light_ambient[0]=light_ambient[1]=light_ambient[2]=1.0;
   light_ambient[3]=1.0;
   light_diffuse[0]=light_diffuse[1]=light_diffuse[2]=
     light_diffuse[3]=1.0;
@@ -49,7 +49,7 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   material_ambient[3]=1.0;
   material_diffuse[0]=material_diffuse[1]=material_diffuse[2]=0.8;
   material_diffuse[3]=1.0;
-  material_specular[0]=material_specular[1]=material_specular[2]=0.0;
+  material_specular[0]=material_specular[1]=material_specular[2]=0.6;
   material_specular[3]=1.0;
   material_emission[0]=material_emission[1]=material_emission[2]=0.0;
   material_emission[3]=1.0;
@@ -58,6 +58,8 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
 
 Viewer::~Viewer(){
   if (parser != NULL) delete parser;
+  if (action != NULL) delete action;
+  if (texture_image != NULL) delete texture_image;
 }
 
 void Viewer::initializeGL(){
@@ -164,7 +166,7 @@ QSize Viewer::minimumSizeHint() const{
 }
 
 QSize Viewer::sizeHint() const{
-  return QSize(800,800);
+  return QSize(600,600);
 }
 
 QAction *Viewer::windowMenuAction() const{
@@ -195,15 +197,30 @@ void Viewer::drawSystemCoordinate(){
   glDisable(GL_LIGHTING);
   glDisable(GL_LIGHT0);
   glBegin(GL_LINES);
+  //x axis
   glColor3f(1.0,0.0,0.0);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(5.0,0.0,0.0);
+  glVertex3f(1.0,0.0,0.0);
+  glVertex3f(1.0,0.0,0.0);
+  glVertex3f(0.9,0.0,-0.05);
+  glVertex3f(1.0,0.0,0.0);
+  glVertex3f(0.9,0.0,0.05);
+  //y axis
   glColor3f(0.0,1.0,0.0);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(0.0,5.0,0.0);
+  glVertex3f(0.0,1.0,0.0);
+  glVertex3f(0.0,1.0,0.0);
+  glVertex3f(0.0,0.9,0.05);
+  glVertex3f(0.0,1.0,0.0);
+  glVertex3f(0.0,0.9,-0.05);
+  //z axis
   glColor3f(0.0,0.0,1.0);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(0.0,0.0,5.0);
+  glVertex3f(0.0,0.0,1.0);
+  glVertex3f(0.0,0.0,1.0);
+  glVertex3f(0.0,0.05,0.9);
+  glVertex3f(0.0,0.0,1.0);
+  glVertex3f(0.0,-0.05,0.9);
   glEnd();
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
@@ -313,4 +330,140 @@ void Viewer::setLightPositionZ(double z){
 
 float Viewer::getLightPositionZ(){
   return light_position[2];
+}
+
+void Viewer::setLightAmbient(int r,int g,int b){
+  light_ambient[0] = float(r) / 255;
+  light_ambient[1] = float(g) / 255;
+  light_ambient[2] = float(b) / 255;
+  glLightfv(GL_LIGHT0,GL_AMBIENT,light_ambient);
+  updateGL();
+}
+
+QColor Viewer::getLightAmbient(){
+  return QColor(int(light_ambient[0] * 255),
+                int(light_ambient[1] * 255),
+                int(light_ambient[2] * 255),
+                1);
+}
+
+void Viewer::setLightDiffuse(int r,int g,int b){
+  light_diffuse[0] = float(r) / 255;
+  light_diffuse[1] = float(g) / 255;
+  light_diffuse[2] = float(b) / 255;
+  glLightfv(GL_LIGHT0,GL_DIFFUSE,light_diffuse);
+  updateGL();
+}
+
+QColor Viewer::getLightDiffuse(){
+  return QColor(int(light_diffuse[0] * 255),
+                int(light_diffuse[1] * 255),
+                int(light_diffuse[2] * 255),
+                1);
+}
+
+void Viewer::setLightSpecular(int r,int g,int b){
+  light_specular[0] = float(r) / 255;
+  light_specular[1] = float(g) / 255;
+  light_specular[2] = float(b) / 255;
+  glLightfv(GL_LIGHT0,GL_SPECULAR,light_specular);
+  updateGL();
+}
+
+QColor Viewer::getLightSpecular(){
+  return QColor(int(light_specular[0] * 255),
+                int(light_specular[1] * 255),
+                int(light_specular[2] * 255),
+                1);
+}
+
+void Viewer::setMaterialAmbient(int r,int g,int b){
+  material_ambient[0] = float(r) / 255;
+  material_ambient[1] = float(g) / 255;
+  material_ambient[2] = float(b) / 255;
+  glMaterialfv(GL_FRONT,GL_AMBIENT,material_ambient);
+  updateGL();
+}
+
+QColor Viewer::getMaterialAmbient(){
+  return QColor(int(material_ambient[0] * 255),
+                int(material_ambient[1] * 255),
+                int(material_ambient[2] * 255),
+                1);
+}
+
+void Viewer::setMaterialDiffuse(int r,int g,int b){
+  material_diffuse[0] = float(r) / 255;
+  material_diffuse[1] = float(g) / 255;
+  material_diffuse[2] = float(b) / 255;
+  glMaterialfv(GL_FRONT,GL_DIFFUSE,material_diffuse);
+  updateGL();
+}
+
+QColor Viewer::getMaterialDiffuse(){
+  return QColor(int(material_diffuse[0] * 255),
+                int(material_diffuse[1] * 255),
+                int(material_diffuse[2] * 255),
+                1);
+}
+
+void Viewer::setMaterialSpecular(int r,int g,int b){
+  material_specular[0] = float(r) / 255;
+  material_specular[1] = float(g) / 255;
+  material_specular[2] = float(b) / 255;
+  glMaterialfv(GL_FRONT,GL_SPECULAR,material_specular);
+  updateGL();
+}
+
+QColor Viewer::getMaterialSpecular(){
+  return QColor(int(material_specular[0] * 255),
+                int(material_specular[1] * 255),
+                int(material_specular[2] * 255),
+                1);
+}
+
+void Viewer::setMaterialEmission(int r,int g,int b){
+  material_emission[0] = float(r) / 255;
+  material_emission[1] = float(g) / 255;
+  material_emission[2] = float(b) / 255;
+  glMaterialfv(GL_FRONT,GL_EMISSION,material_emission);
+  updateGL();
+}
+
+QColor Viewer::getMaterialEmission(){
+  return QColor(int(material_emission[0] * 255),
+                int(material_emission[1] * 255),
+                int(material_emission[2] * 255),
+                1);
+}
+
+void Viewer::setMaterialShininess(double s){
+  material_shininess = s;
+  glMaterialf(GL_FRONT,GL_SHININESS,material_shininess);
+  updateGL();
+}
+
+float Viewer::getMaterialShininess(){
+  return material_shininess;
+}
+
+void Viewer::enableTexture(){
+  is_texture = true;
+  updateGL();
+}
+
+void Viewer::disableTexture(){
+  is_texture = false;
+  updateGL();
+}
+
+void Viewer::setTextureImage(QImage *image){
+  if (texture_image != NULL && texture_image != image)
+    delete texture_image;
+  texture_image = image;
+  updateGL();
+}
+
+QImage* Viewer::getTextureImage(){
+  return texture_image;
 }
