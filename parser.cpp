@@ -1,5 +1,10 @@
 #include "parser.h"
-
+#include "parserstruct.h"
+#include <utility>
+#include <map>
+#include <set>
+#include <math.h>
+#include <queue>
 #include <stdio.h>
 #include <string.h>
 #include <fstream>
@@ -8,6 +13,7 @@
 #include <GL/glut.h>
 
 using namespace std;
+
 
 static float strToFloat(char str[]){
   float result = 0;
@@ -178,17 +184,22 @@ Parser::Parser(const char* file_name){
   input.close();
   success = true;
   resizeVector();
+
+  if (success) mesh = new HEdgeMesh(object);
 }
 
 void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
                       bool show_texture){
   glPushMatrix();
   glScalef(vertice_scale_x,vertice_scale_y,vertice_scale_z);
-  glTranslatef(vertice_transform_x,vertice_transform_y,
-               vertice_transform_z);
-
+  glTranslatef(vertice_transform_x,vertice_transform_y,vertice_transform_z);
+  mesh->drawInGL(t,is_light,show_normals,show_texture);
+  glPopMatrix();
+  return;
+  
+  glPushMatrix();
   for (vector<faceInfo>::iterator face = object.faces.begin();
-       face != object.faces.end(); face ++){
+       face != object.faces.end(); ++ face){
 
     
     if (t == DRAW_POLY){
@@ -200,7 +211,7 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
     
       for (vector<int>::iterator 
              index = face->vertices_index.begin();
-           index != face->vertices_index.end(); index ++){
+           index != face->vertices_index.end(); ++ index){
         float* vertice4f = object.vertices4f[*index - 1];
         glVertex4f(vertice4f[0],vertice4f[1],
                    vertice4f[2],vertice4f[3]);
@@ -229,19 +240,19 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
     }
 
     unsigned int count = 0;
+    float* vertice4f,* normal3f,* tex_coords3f;
     for (vector<int>::iterator 
            index = face->vertices_index.begin();
-         index != face->vertices_index.end(); index ++){
-      float* vertice4f = object.vertices4f[*index - 1];
+         index != face->vertices_index.end(); ++ index){
+      vertice4f = object.vertices4f[*index - 1];
       //set normal vector
       if (is_light && count < face->normals_index.size()){
-        float* normal3f = object.normals3f[face->normals_index[count] 
-                                        - 1];
+        normal3f = object.normals3f[face->normals_index[count] - 1];
         glNormal3f(normal3f[0],normal3f[1],normal3f[2]);
       }
       if (show_texture && count < face->text_coords_index.size()){
         //only support 2d texture now
-        float* tex_coords3f = object.text_coords3f[face->text_coords_index[count] - 1];
+        tex_coords3f = object.text_coords3f[face->text_coords_index[count] - 1];
         glTexCoord2f(tex_coords3f[0],tex_coords3f[1]);
       }
       count ++;
@@ -255,10 +266,11 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
     glDisable(GL_TEXTURE_2D);
 
     //show normal vector
+    
     if (show_normals){
       glDisable(GL_LIGHTING);
       glDisable(GL_LIGHT0);
-      for (unsigned int i = 0; i < face->vertices_index.size(); i ++){
+      for (unsigned int i = 0; i < face->vertices_index.size(); ++ i){
         float* vertice4f = object.vertices4f[face->vertices_index[i]-1];
         if (i < face->normals_index.size()){
           float* normal3f = object.normals3f[face->normals_index[i]-1];
@@ -276,6 +288,7 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
       glEnable(GL_LIGHTING);
       glEnable(GL_LIGHT0);
     }
+    
     //end show normal vector
 
   }//end for faces
@@ -288,16 +301,18 @@ void Parser::drawInGL(DRAW_TYPE t,bool is_light,bool show_normals,
 
 Parser::~Parser(){
   for (unsigned int i = 0; i < object.vertices4f.size(); i ++)
-    delete object.vertices4f[i];
+    delete[] object.vertices4f[i];
   for (unsigned int i = 0; i < object.text_coords3f.size(); i ++)
-    delete object.text_coords3f[i];
+    delete[] object.text_coords3f[i];
   for (unsigned int i = 0; i < object.normals3f.size(); i ++)
-    delete object.normals3f[i];
+    delete[] object.normals3f[i];
 
   object.vertices4f.clear();
   object.text_coords3f.clear();
   object.normals3f.clear();
+  object.faces.clear();
 
+  if (mesh != NULL) delete mesh;
 }
 
 void Parser::printInfo(){
@@ -374,8 +389,19 @@ void Parser::resizeVector(){
   vertice_scale_y /= (y_max - y_min);
   vertice_scale_z /= (z_max - z_min);
   vertice_scale_x = vertice_scale_y = vertice_scale_z = 
-    min(vertice_scale_x,min(vertice_scale_y,vertice_scale_z)) * 3;
+    max(vertice_scale_x,max(vertice_scale_y,vertice_scale_z)) * 2;
   vertice_transform_x = (x_max + x_min) / 2 * -1;
   vertice_transform_y = (y_max + y_min) / 2 * -1;
   vertice_transform_z = (z_max + z_min) / 2 * -1;
+  /*
+  for (unsigned int i = 0; i < object.vertices4f.size(); i ++){
+    object.vertices4f[i][0] += vertice_transform_x;
+    object.vertices4f[i][1] += vertice_transform_y;
+    object.vertices4f[i][2] += vertice_transform_z;
+    object.vertices4f[i][0] *= vertice_scale_x;
+    object.vertices4f[i][1] *= vertice_scale_y;
+    object.vertices4f[i][2] *= vertice_scale_z;
+    }*/
 }
+
+

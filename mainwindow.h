@@ -54,6 +54,7 @@ private slots:
   void pointAction();
   void lineAction();
   void polygonAction();
+  void divideAction();
 
 
 private:
@@ -72,11 +73,13 @@ private:
   QPixmap *light_pix;
   QPixmap *material_pix;
   QPixmap *texture_pix;
+  QPixmap *divide_pix;
 
   QAction *open_action;
   QAction *close_action;
   QAction *close_all_action;
   QAction *quit_action;
+  QAction *divide_action;
 
   QActionGroup *window_action_group;  
   QAction *next_action;

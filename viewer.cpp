@@ -22,7 +22,7 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   setWindowTitle(QFileInfo(file_name).fileName());
   setFormat(QGLFormat(QGL::DoubleBuffer|QGL::DepthBuffer));
 
-  draw_type = DRAW_LINE;
+  draw_type = DRAW_POLY;
   //scale
   scale_x = scale_y = scale_z = 1.0;
   //translate
@@ -33,7 +33,7 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
   rotation_x = rotation_y = rotation_z = 0;
   is_rotate = true;
   //light
-  show_normals = true;
+  show_normals = false;
   is_light = true;
   light_ambient[0]=light_ambient[1]=light_ambient[2]=1.0;
   light_ambient[3]=1.0;
@@ -60,7 +60,13 @@ Viewer::Viewer(Parser *_parser,QString _file_name,QWidget *parent)
 }
 
 Viewer::~Viewer(){
-  if (parser != NULL) delete parser;
+  if (parser != NULL){
+    if (parser->mesh != NULL){
+      delete parser->mesh;
+      parser->mesh = NULL;
+    }
+    delete parser;
+  }
   if (action != NULL) delete action;
   if (texture_image != NULL) delete texture_image;
 }
@@ -77,7 +83,7 @@ void Viewer::resizeGL(int width,int height){
   glViewport(0,0,width,height);
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(90,1.0,0.3,50.0);
+  gluPerspective(90,1.0,0.1,100.0);
 }
 
 void Viewer::paintGL(){
@@ -99,6 +105,8 @@ void Viewer::paintGL(){
     parser->drawInGL(draw_type,is_light,show_normals,is_texture);
     glLightfv(GL_LIGHT0,GL_POSITION,light_position);
   }
+
+  swapBuffers();
 }
 
 void Viewer::mousePressEvent(QMouseEvent *event){
@@ -200,30 +208,31 @@ void Viewer::drawSystemCoordinate(){
   glDisable(GL_LIGHTING);
   glDisable(GL_LIGHT0);
   glBegin(GL_LINES);
+  float l = 3.0;
   //x axis
-  glColor3f(1.0,0.0,0.0);
+  glColor3f(l,0.0,0.0);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(1.0,0.0,0.0);
-  glVertex3f(1.0,0.0,0.0);
-  glVertex3f(0.9,0.0,-0.05);
-  glVertex3f(1.0,0.0,0.0);
-  glVertex3f(0.9,0.0,0.05);
+  glVertex3f(l,0.0,0.0);
+  glVertex3f(l,0.0,0.0);
+  glVertex3f(l-0.1,0.0,-0.05);
+  glVertex3f(l,0.0,0.0);
+  glVertex3f(l-0.1,0.0,0.05);
   //y axis
-  glColor3f(0.0,1.0,0.0);
+  glColor3f(0.0,l,0.0);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(0.0,1.0,0.0);
-  glVertex3f(0.0,1.0,0.0);
-  glVertex3f(0.0,0.9,0.05);
-  glVertex3f(0.0,1.0,0.0);
-  glVertex3f(0.0,0.9,-0.05);
+  glVertex3f(0.0,l,0.0);
+  glVertex3f(0.0,l,0.0);
+  glVertex3f(0.0,l-0.1,0.05);
+  glVertex3f(0.0,l,0.0);
+  glVertex3f(0.0,l-0.1,-0.05);
   //z axis
-  glColor3f(0.0,0.0,1.0);
+  glColor3f(0.0,0.0,l);
   glVertex3f(0.0,0.0,0.0);
-  glVertex3f(0.0,0.0,1.0);
-  glVertex3f(0.0,0.0,1.0);
-  glVertex3f(0.0,0.05,0.9);
-  glVertex3f(0.0,0.0,1.0);
-  glVertex3f(0.0,-0.05,0.9);
+  glVertex3f(0.0,0.0,l);
+  glVertex3f(0.0,0.0,l);
+  glVertex3f(0.0,0.05,l-0.1);
+  glVertex3f(0.0,0.0,l);
+  glVertex3f(0.0,-0.05,l-0.1);
   glEnd();
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
@@ -241,6 +250,12 @@ void Viewer::enableLine(){
 
 void Viewer::enablePoly(){
   draw_type = DRAW_POLY;
+  updateGL();
+}
+
+void Viewer::subDivide(int number){
+  if (parser && parser->mesh)
+    parser->mesh->loopDivision(number);
   updateGL();
 }
 

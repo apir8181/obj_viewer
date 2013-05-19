@@ -49,6 +49,7 @@ MainWindow::~MainWindow(){
   delete light_pix;
   delete material_pix;
   delete texture_pix;
+  delete divide_pix;
 }
 
 void MainWindow::createMenuBar(){
@@ -71,6 +72,8 @@ void MainWindow::createMenuBar(){
   operation_menu->addAction(point_action);
   operation_menu->addAction(line_action);
   operation_menu->addAction(polygon_action);
+  operation_menu->addSeparator();
+  operation_menu->addAction(divide_action);
 }
 
 void MainWindow::createToolBar(){
@@ -92,6 +95,9 @@ void MainWindow::createToolBar(){
   toolbar->addAction(point_action);
   toolbar->addAction(line_action);
   toolbar->addAction(polygon_action);
+
+  toolbar->addSeparator();
+  toolbar->addAction(divide_action);
 }
 
 void MainWindow::createLeftToolBar(){
@@ -127,6 +133,7 @@ void MainWindow::createResources(){
   light_pix = new QPixmap("images/light.png");
   material_pix = new QPixmap("images/material.png");
   texture_pix = new QPixmap("images/texture.png");
+  divide_pix = new QPixmap("images/divide.png");
 }
 
 void MainWindow::createActions(){
@@ -170,8 +177,8 @@ void MainWindow::createActions(){
   polygon_action = new QAction(*polygon_pix,"Polygon",this);
   point_action->setCheckable(true);
   line_action->setCheckable(true);
-  line_action->setChecked(true);
   polygon_action->setCheckable(true);
+  polygon_action->setChecked(true);
   shape_action_group = new QActionGroup(this);
   shape_action_group->addAction(point_action);
   shape_action_group->addAction(line_action);
@@ -180,6 +187,10 @@ void MainWindow::createActions(){
   connect(line_action,SIGNAL(triggered()),this,SLOT(lineAction()));
   connect(polygon_action,SIGNAL(triggered()),
           this,SLOT(polygonAction()));
+
+  divide_action = new QAction(*divide_pix,"Subdivision",this);
+  connect(divide_action,SIGNAL(triggered()),
+          this,SLOT(divideAction()));
 }
 
 void MainWindow::updateActions(){
@@ -252,7 +263,8 @@ void MainWindow::updateActions(){
 }
 
 void MainWindow::open(){
-  QString file_name = QFileDialog::getOpenFileName(this,"Open",".");
+  QString file_name = QFileDialog::getOpenFileName(this,"Open",".",
+                                                   QString("*.obj"));
   if (file_name.isEmpty()) return;
   else{
     Parser *parser = new Parser(file_name.toStdString().c_str());
@@ -298,6 +310,7 @@ void MainWindow::open(){
     window_action_group->addAction(viewer->windowMenuAction());
     mdi_area->activateNextSubWindow();
     sub_window->show();
+
   }
 }
 
@@ -494,6 +507,18 @@ void MainWindow::textureSelectAction(){
     texture_select_button->setIconSize(QSize(texture_select_button->width(),texture_select_button->height()));
     texture_select_button->setIcon(icon);
   }
+}
+
+void MainWindow::divideAction(){
+  Viewer *v = activeViewer();
+  if (!v) return;
+  bool ok = false;
+  int number = \
+    QInputDialog::getInteger(this,QString("Subdivision"),
+                             QString("Input iteration times"),
+                             0,0,10,1,&ok);
+  if (ok)
+    v->subDivide(number);
 }
 
 Viewer* MainWindow::activeViewer(){

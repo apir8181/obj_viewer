@@ -59,6 +59,7 @@ class Viewer: public QGLWidget{
 
   void enableTranslate();
   //loop subdivision
+  void subDivide(int number);
   //texture
   void enableTexture();
   void disableTexture();
