@@ -36,6 +36,7 @@ static float strToFloat(char str[]){
   }
 
   if (negative) result *= -1;
+  //printf("%s %f %d\n",str, result, length);
   return result;
 }
 
@@ -184,7 +185,7 @@ Parser::Parser(const char* file_name){
   input.close();
   success = true;
   resizeVector();
-
+  
   if (success) mesh = new HEdgeMesh(object);
 }
 
